@@ -28,6 +28,27 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html _site/index.html
+          mkdir -p _site/assets
+          python3 - <<'PY'
+          import json, urllib.request
+          try:
+              req=urllib.request.Request('https://itunes.apple.com/lookup?id=6499528122&country=us',headers={'User-Agent':'Mozilla/5.0'})
+              with urllib.request.urlopen(req,timeout=20) as r:
+                  data=json.load(r)
+              app=data['results'][0]
+              screenshots=app.get('screenshotUrls') or app.get('ipadScreenshotUrls') or []
+              if screenshots:
+                  url=screenshots[0].replace('392x696bb','800x800bb')
+                  with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0'}),timeout=20) as r:
+                      content=r.read()
+                  with open('_site/assets/tap-gallery.jpg','wb') as f:
+                      f.write(content)
+                  print('Tap Gallery official artwork downloaded:',len(content),'bytes')
+              else:
+                  print('No official screenshots returned; emoji fallback will be used')
+          except Exception as e:
+              print('Artwork unavailable; keeping emoji fallback:',e)
+          PY
           touch _site/.nojekyll
       - name: Configure Pages
         uses: actions/configure-pages@v5
